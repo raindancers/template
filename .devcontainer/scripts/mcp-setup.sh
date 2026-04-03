@@ -11,6 +11,9 @@ cat > /home/node/.aws/amazonq/mcp.json << EOF
     "aws-knowledge-mcp-server": {
       "url": "https://knowledge-mcp.global.api.aws"
     },
+    "microsoft-learn": {
+      "url": "https://learn.microsoft.com/api/mcp"
+    },
     "awslabs.aws-api-mcp-server": {
       "command": "uvx",
       "args": [
