@@ -6,9 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Debug: pwd=$(pwd), user=$(whoami), home=$HOME, script_dir=$SCRIPT_DIR" > /home/node/setup.log
 echo 'Starting setup...' >> /home/node/setup.log
 
-# Fix ownership on volume-mounted directories (Docker creates them as root)
-sudo chown -R node:node /home/node/.kiro /home/node/.local 2>/dev/null || true
-mkdir -p /home/node/.local/bin /home/node/.local/share/kiro-cli
+# Ensure directories exist for Kiro CLI and uvx
+mkdir -p /home/node/.local/bin /home/node/.local/share/kiro-cli /home/node/.kiro/settings
 
 # Run individual setup scripts with error handling using absolute paths
 if "$SCRIPT_DIR/scripts/git-setup.sh"; then
