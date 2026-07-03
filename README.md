@@ -99,6 +99,8 @@ First time only (persisted across rebuilds via named Docker volumes):
 kiro-cli login --use-device-flow
 ```
 
+The `--use-device-flow` flag is required because the container can't open a browser directly. It displays a URL and a one-time code in the terminal — open the URL on your host machine, enter the code, and authentication completes automatically.
+
 ### Persistence
 
 The devcontainer mounts two named volumes:
