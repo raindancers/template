@@ -1,180 +1,250 @@
-# DevContainer Setup
+# CDK Development Container Template
 
-This directory contains the configuration and setup scripts for the development container environment.
+A template repository for CDK-based projects using VS Code devcontainers with Kiro CLI for AI-assisted development.
 
-## Overview
+## What You Get
 
-The devcontainer is based on the TypeScript/Node.js 22 image and includes AWS development tools, Python, and Docker support.
+- **VS Code** as the editor with devcontainer support
+- **Kiro CLI** as the AI coding agent (terminal-based)
+- **AWS CLI** with interactive SSO configuration on first run
+- **Azure CLI** for Microsoft Graph / Entra ID operations
+- **12 MCP servers** pre-configured for AWS, GitHub, and Microsoft services
+- **Steering files** for consistent AI behaviour across the team
+- **Auth persistence** — Kiro and AWS credentials survive container rebuilds
 
-## WSL2 Setup for Optimal Performance
+## Quick Start
 
-**Recommended**: Clone and work with this repository directly in WSL2 for significantly better performance (5-10x faster than Windows filesystem access).
+1. Create a new repo from this template
+2. Clone it in WSL2 (recommended) or locally
+3. Open in VS Code → "Reopen in Container"
+4. On first run, the setup will prompt you for AWS SSO details
+5. Authenticate Kiro CLI:
+   ```bash
+   kiro-cli login --use-device-flow
+   ```
+6. Start coding:
+   ```bash
+   kiro-cli
+   ```
+
+## Project Structure
+
+```
+.devcontainer/
+├── devcontainer.json          # Container config, extensions, volume mounts
+├── setup.sh                   # Setup orchestrator
+└── scripts/
+    ├── git-setup.sh           # Auto-configures git identity from GitHub
+    ├── aws-setup.sh           # Interactive AWS SSO config (first-run only)
+    ├── uvx-setup.sh           # Installs uv/uvx for Python MCP servers
+    ├── kiro-setup.sh          # Installs Kiro CLI
+    └── mcp-setup.sh           # Configures all MCP servers
+.kiro/
+└── steering/                  # Project guidelines for Kiro
+    ├── security-architecture-principles.md
+    ├── DonotchangeCodeWithoutAsking.md
+    ├── documentation.md
+    ├── bicep-validation.md
+    ├── propertyshorthand.md
+    └── Imports.md
+```
+
+## MCP Servers
+
+The following MCP servers are pre-configured in `~/.kiro/settings/mcp.json`:
+
+### Remote (no local process, instant)
+
+| Server | Purpose |
+|--------|---------|
+| GitHub | PRs, issues, Actions, code search (OAuth on first use) |
+| AWS Knowledge | AWS docs and knowledge base |
+| Microsoft Learn | Entra ID / Azure / M365 documentation |
+| Microsoft Enterprise | Read-only Microsoft Graph queries (OAuth on first use) |
+
+### Local (uvx, spin up on demand)
+
+| Server | Purpose |
+|--------|---------|
+| AWS MCP (managed, preview) | Combined API + docs + Agent SOPs with CloudTrail audit |
+| CDK | Construct patterns, best practices, CDK Nag compliance |
+| AWS Documentation | Full AWS docs search and recommendations |
+| AWS API | Execute AWS CLI commands via the agent |
+| IAM | Manage users, roles, policies with security best practices |
+| CloudWatch | Query logs, metrics, and alarms |
+| CloudTrail | API activity audit trail |
+| AWS Pricing | Cost estimation and pricing lookups |
+
+## AWS Configuration
+
+The AWS setup (`scripts/aws-setup.sh`) is interactive on first run:
+
+- Prompts for your SSO start URL, region, and profiles
+- Generates `~/.aws/config` with a unique session name per user/repo/branch
+- Skips automatically on subsequent container rebuilds
+- In headless environments (CI, prebuilds), writes a placeholder config
+
+To reconfigure:
+```bash
+rm ~/.aws/config
+.devcontainer/scripts/aws-setup.sh
+```
+
+## Kiro CLI
+
+### Authentication
+
+First time only (persisted across rebuilds via named Docker volumes):
+```bash
+kiro-cli login --use-device-flow
+```
+
+### Persistence
+
+The devcontainer mounts two named volumes:
+- `kiro-config` → `~/.kiro` (settings, steering, MCP config)
+- `kiro-cli-data` → `~/.local/share/kiro-cli` (auth tokens, session data)
+
+### Steering Files
+
+Project-level steering files in `.kiro/steering/` are automatically picked up by Kiro CLI. These define non-negotiable conventions (security architecture, documentation standards, etc.) that the AI follows in every session.
+
+## VS Code Extensions
+
+- TypeScript language support
+- AWS Toolkit
+- GitHub Actions
+- JSON language support
+- Python + pylint
+
+## Base Image Features
+
+- TypeScript/Node.js 22
+- AWS CLI
+- Azure CLI
+- Docker-in-Docker
+- Python + uv/uvx
+- GitHub CLI
+
+## WSL2 Setup (Windows)
+
+**This is the recommended way to use this template on Windows.** Working directly on the Windows filesystem is significantly slower (5-10x) for Node.js operations like `npm install`.
 
 ### Prerequisites
-- Windows 10/11 with WSL2 enabled
-- Docker Desktop for Windows with WSL2 backend enabled
-- VS Code with Remote Development extension pack installed
 
-### Setup Steps
+- Windows 10/11 with WSL2 enabled
+- Docker Desktop for Windows with the **WSL2 backend** enabled
+- VS Code with the **Dev Containers** extension installed
+- A WSL2 distro (e.g., Ubuntu) from the Microsoft Store
+
+### Step-by-Step
 
 1. **Open a WSL2 terminal** (e.g., Ubuntu from Windows Terminal)
 
-2. **Clone the repository in WSL2 filesystem**:
+2. **Clone the repo in the WSL2 filesystem** (not `/mnt/c/`):
    ```bash
    cd ~
    git clone <repository-url>
-   cd cdk-api
+   cd <project-name>
    ```
 
 3. **Open in VS Code**:
    ```bash
    code .
    ```
-   
-4. **Reopen in Container**: When prompted by VS Code, click "Reopen in Container"
-   - Or use Command Palette: `Dev Containers: Reopen in Container`
 
-### GitHub CLI Setup
+4. **Reopen in Container**: When VS Code opens, click "Reopen in Container" in the notification
+   - Or use the Command Palette: `Dev Containers: Reopen in Container`
 
-If you need to clone private repositories or authenticate with GitHub from within WSL2, you may need to install GitHub CLI:
+5. **First run**: The AWS setup will prompt you interactively for SSO details. Follow the prompts.
 
-1. **Open Windows Terminal and access your WSL2 distro as root**:
+6. **Authenticate Kiro CLI**:
    ```bash
-   wsl -u root
+   kiro-cli login --use-device-flow
    ```
 
-2. **Install GitHub CLI**:
-   ```bash
-   apt update && apt install gh
-   ```
-
-3. **Exit root and authenticate** (as your regular user):
-   ```bash
-   exit
-   gh auth login
-   ```
-   
-   Follow the prompts and select:
-   - **GitHub.com**
-   - **HTTPS** protocol
-   - **Login with a web browser** (device code flow)
-   - Copy the one-time code and press Enter to open the browser
-   - Paste the code in GitHub to complete authentication
-
-**Note**: This installs `gh` in your WSL2 distro, not in the devcontainer. The devcontainer will inherit your WSL2 git credentials when cloning repositories.
-
-### Verify Your Setup
-
-To confirm you're running with optimal performance:
-
-```bash
-# Check filesystem type (should show ext4, not 9p)
-df -h /workspaces/cdk-api
-
-# Check kernel (should show WSL2)
-uname -a
-```
-
-**Expected output**: `/dev/sd*` device with `ext4` filesystem and `microsoft-standard-WSL2` kernel.
-
-### Architecture
+### Why WSL2?
 
 Your development environment runs as: **Windows → WSL2 → Docker → Dev Container**
 
-- Files are stored natively in WSL2's ext4 filesystem (not Windows NTFS)
-- Docker engine runs in WSL2
-- Dev container runs in Docker with direct access to WSL2 filesystem
-- Result: Native Linux I/O performance for operations like `npm install` and `yarn`
+- Files are stored natively in WSL2's ext4 filesystem (not Windows NTFS via `/mnt/c/`)
+- Docker runs directly in WSL2, not through Hyper-V
+- The devcontainer gets native Linux I/O for `npm install`, `yarn`, `tsc`, etc.
+- Result: massively faster builds and installs compared to working from the Windows filesystem
 
-### Note on Remote Explorer
+### Verify Performance
 
-The devcontainer will appear under **Dev Containers** in VS Code Remote Explorer, not under WSL Targets. This is correct - you're connected to the container, which is hosted by Docker in WSL2.
-
-## Setup Process
-
-When the devcontainer is created, the `postCreateCommand` runs:
+To confirm you're running with optimal performance inside the container:
 ```bash
-chmod +x .devcontainer/setup.sh .devcontainer/scripts/*.sh && .devcontainer/setup.sh
+# Should show ext4, not 9p or drvfs
+df -T /workspaces/*
+
+# Should show microsoft-standard-WSL2 kernel
+uname -r
 ```
 
-This command:
-1. Makes all shell scripts executable (`chmod +x`)
-2. Runs the main setup script (`setup.sh`) only if the chmod succeeds (`&&`)
+### Where It Appears in VS Code
 
-## What Gets Installed
+The devcontainer shows under **Dev Containers** in the Remote Explorer panel, not under WSL Targets. This is correct — you're connected to the container, which Docker hosts inside WSL2.
 
-### Base Features
-- **TypeScript/Node.js 22**: Main development environment
-- **AWS CLI**: Command line interface for AWS services
-- **Docker-in-Docker**: Ability to run Docker containers within the devcontainer
-- **Python**: Python runtime and tools
+### GitHub CLI in WSL2
 
-### VS Code Extensions
-- TypeScript language support
-- AWS Toolkit for VS Code
-- Amazon Q for VS Code
-- GitHub Actions support
-- JSON language support
-- Python language support and linting
+If you need to authenticate with GitHub from your WSL2 distro (for private repos):
 
-### Setup Scripts
+```bash
+# Install gh (one-time, as root)
+wsl -u root
+apt update && apt install gh
+exit
 
-The main `setup.sh` orchestrates the following individual setup scripts:
+# Authenticate (as your regular user)
+gh auth login
+```
 
-#### 1. NPM Setup (`scripts/npm-setup.sh`)
-- Configures NPM for GitHub packages
-- Sets up authentication token for `@tepapaatawhai` scope
-- Creates `.npmrc` configuration
+This installs `gh` in your WSL2 distro, not inside the devcontainer. The devcontainer inherits your WSL2 git credentials automatically.
 
-#### 2. Dependencies Installation (`scripts/install-deps.sh`)
-- Runs `yarn install` to install project dependencies
+### Troubleshooting
 
-#### 3. AWS Setup (`scripts/aws-setup.sh`)
-- Creates AWS configuration directory
-- Sets up AWS SSO profile configuration
-- Configures default region (ap-southeast-2)
-- **Note**: Contains placeholder values that need to be updated
+| Problem | Fix |
+|---------|-----|
+| "Reopen in Container" not showing | Ensure Dev Containers extension is installed in VS Code |
+| Very slow file operations | Check you cloned into `~/` not `/mnt/c/`. Run `pwd` — should start with `/home/` |
+| Docker not running | Open Docker Desktop, ensure WSL2 backend is enabled in Settings → General |
+| Container build fails | Check `~/setup.log` inside the container for which script failed |
 
-#### 4. MCP Setup (`scripts/mcp-setup.sh`)
-- Configures Model Context Protocol for Amazon Q
-- Sets up filesystem, git, and AWS MCP servers
-- Creates configuration in `~/.config/amazonq/mcp.json`
+## Container User
 
-## Configuration Files
-
-- `devcontainer.json`: Main devcontainer configuration
-- `setup.sh`: Main setup orchestrator
-- `scripts/`: Individual setup scripts for different components
-
-## User
-
-The container runs as the `node` user for several important reasons:
-- **Security**: Avoids running as root, following the principle of least privilege
-- **Compatibility**: Pre-configured with proper permissions for Node.js development and NPM/Yarn package management
-- **Standards**: Follows Node.js Docker image conventions and integrates well with VS Code devcontainers
-- **Environment**: Provides a proper home directory (`/home/node`) for configuration files and shell access
-
-
-## Known Issues
-
-### MCP Setup
-The Model Context Protocol (MCP) setup is not 100% configured correctly. Some manual configuration may be required after the devcontainer is created.
-
-### Git LFS
-The repository is configured for Git LFS but `git-lfs` is not installed in the devcontainer. You may see warnings about missing Git LFS. To resolve, either:
-- Install Git LFS: `sudo apt-get update && sudo apt-get install git-lfs`
-- Or remove Git LFS hooks if not needed: `rm .git/hooks/post-commit`
+Runs as `node` (not root) for security and Node.js compatibility. Home directory is `/home/node`.
 
 ## Logs
 
 Setup progress is logged to `~/setup.log` for troubleshooting.
 
+## Steering Files to Add Per Project
+
+The template includes general-purpose steering files. When starting a new project, consider adding these to `.kiro/steering/`:
+
+| File | Purpose |
+|------|---------|
+| `aws-region.md` | Default region and any multi-region expectations |
+| `testing.md` | Test framework (jest/vitest), snapshot vs fine-grained assertions, coverage expectations |
+| `graph-operations.md` | Microsoft Graph conventions — delegated vs application permissions, preferred auth patterns |
+| `commit-style.md` | Conventional commits, PR structure, commit granularity |
+| `naming-conventions.md` | Resource naming patterns (e.g. `{project}-{env}-{resource}`), construct ID conventions |
+| `error-handling.md` | Preferred patterns for Lambda/API error responses, error types |
+
+These are intentionally left out of the template — they vary too much between projects to standardise.
+
 ## Customization
 
-To modify the setup:
-1. Edit the relevant script in the `scripts/` directory
-2. Update AWS configuration in `aws-setup.sh` with your actual values
-3. Modify NPM configuration in `npm-setup.sh` if using different registries
-4. Rebuild the devcontainer to apply changes
+- **AWS profiles**: Delete `~/.aws/config` and re-run the setup script
+- **MCP servers**: Edit `scripts/mcp-setup.sh` to add/remove servers
+- **Steering**: Add/edit markdown files in `.kiro/steering/`
+- **New setup steps**: Create a script in `scripts/`, call it from `setup.sh`
+- **Extensions**: Edit the `customizations.vscode.extensions` array in `devcontainer.json`
 
-**Adding New Scripts**: You can create additional setup scripts in the `scripts/` directory. They will automatically be made executable by the `postCreateCommand`. Remember to call your new script from `setup.sh` to include it in the setup process.template
+## Known Issues
+
+- **MCP OAuth servers** (GitHub, Microsoft Enterprise) require a browser flow on first use
+- **AWS MCP** is in preview — behaviour may change
+- **Git LFS** not installed. If needed: `sudo apt-get update && sudo apt-get install git-lfs`

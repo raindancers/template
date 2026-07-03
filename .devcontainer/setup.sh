@@ -31,6 +31,12 @@ else
     echo 'uvx setup failed' >> /home/node/setup.log
 fi
 
+if "$SCRIPT_DIR/scripts/kiro-setup.sh"; then
+    echo 'Kiro CLI setup done' >> /home/node/setup.log
+else
+    echo 'Kiro CLI setup failed' >> /home/node/setup.log
+fi
+
 if "$SCRIPT_DIR/scripts/mcp-setup.sh"; then
     echo 'MCP setup done' >> /home/node/setup.log
 else

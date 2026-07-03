@@ -10,12 +10,23 @@
     "ghcr.io/devcontainers/features/python:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+  "mounts": [
+    {
+      "source": "kiro-config",
+      "target": "/home/node/.kiro",
+      "type": "volume"
+    },
+    {
+      "source": "kiro-cli-data",
+      "target": "/home/node/.local/share/kiro-cli",
+      "type": "volume"
+    }
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-vscode.vscode-typescript-next",
         "amazonwebservices.aws-toolkit-vscode",
-        "amazonwebservices.amazon-q-vscode",
         "github.vscode-github-actions",
         "ms-vscode.vscode-json",
         "ms-python.python",
